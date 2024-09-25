@@ -27,14 +27,10 @@ title_font_size = 18
 
 color_schemes = %{
   "main-colors" => [
-    "#1696d2",
-    "#d2d2d2",
-    "#000000",
-    "#fdbf11",
-    "#ec008b",
-    "#55b748",
-    "#5c5859",
-    "#db2b27"
+    "#FDDA00",
+    "#FF7331",
+    "#71E5D1",
+    "#7759B0"
   ],
   "shades-blue" => [
     "#cFE8F3",
