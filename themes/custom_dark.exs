@@ -1,10 +1,28 @@
+# colors: {
+#   gray: {
+#     500: "#737373",
+#     950: "#0E0E0E"
+#   },
+#   yellow: {
+#     500: "#FDDA00"
+#   },
+#   orange: {
+#     500: "#FF7331"
+#   },
+#   cyan: {
+#     500: "#71E5D1"
+#   },
+#   purple: {
+#     500: "#7759B0"
+#   }
+
 mark_color = "#1696d2"
-axis_color = "#000000"
-background_color = "#fFFFFF"
+axis_color = "#FFFFFF"
+background_color = "#0E0E0E"
 font = "lato"
 label_font = "lato"
 source_font = "lato"
-grid_color = "#dEDDDD"
+grid_color = "#737373"
 title_font_size = 18
 
 color_schemes = %{
