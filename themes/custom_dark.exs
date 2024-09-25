@@ -49,7 +49,7 @@ color_schemes = %{
   ],
   "one-group" => ["#71E5D1", "#000000"],
   "two-groups-cat-1" => ["#71E5D1", "#000000"],
-  "two-groups-cat-2" => ["#71E5D1", "#fdbf11"],
+  "two-groups-cat-2" => ["#71E5D1", "#7759B0"],
   "two-groups-cat-3" => ["#71E5D1", "#db2b27"],
   "two-groups-seq" => ["#a2d4ec", "#71E5D1"],
   "three-groups-cat" => ["#71E5D1", "#fdbf11", "#000000"],
