@@ -45,6 +45,10 @@ color_schemes = %{
     "#525252"
   ],
   "shades-yellow" => [
+    "#FFF8CC",
+    "#FEF099",
+    "#FEE966",
+    "#FDE133",
     "#FDDA00"
   ],
   "shades-purple" => [
@@ -73,12 +77,12 @@ color_schemes = %{
   "six-groups-cat-2" => ["#71E5D1", "#A3A3A3", "#7759B0", "#FF7331", "#332d2f", "#5AB7A7"],
   "six-groups-seq" => ["#AAEFE3", "#8DEADA", "#5AB7A7", "#44897D", "#71E5D1", "#12719e"],
   "diverging-colors" => [
-    "#ca5800",
+    "#FDE133",
     "#FF7331",
-    "#fdd870",
-    "#fff2cf",
+    "#FEE966",
+    "#FEF099",
     "#AAEFE3",
-    "#73bfe2",
+    "#8DEADA",
     "#71E5D1",
     "#5AB7A7"
   ]
