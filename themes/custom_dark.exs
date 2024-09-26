@@ -94,7 +94,8 @@ theme = [
     tick_size: 5,
     title_font_size: 12,
     title_padding: 10,
-    title_font: font
+    title_font: font,
+    title_color: axis_color
   ],
   axis_y: [
     domain: false,
@@ -111,7 +112,8 @@ theme = [
     title_font: font,
     title_angle: 0,
     title_y: -10,
-    title_x: 18
+    title_x: 18,
+    title_color: axis_color
   ],
   legend: [
     label_font_size: 12,
