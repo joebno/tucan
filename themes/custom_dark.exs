@@ -80,9 +80,7 @@ theme = [
   title: [
     anchor: "start",
     font_size: title_font_size,
-    font: font
-  ],
-  title: [
+    font: font,
     color: axis_color,
     subtitle_color: axis_color
   ],
