@@ -37,7 +37,8 @@ color_schemes = %{
     "#8DEADA",
     "#71E5D1",
     "#5AB7A7",
-    "#44897D"
+    "#44897D",
+    "#2D5C54"
   ],
   "shades-gray" => [
     "#A3A3A3",
@@ -75,7 +76,7 @@ color_schemes = %{
   "five-groups-seq" => ["#AAEFE3", "#CC5C27", "#71E5D1", "#5AB7A7", "#927AC0"],
   "six-groups-cat-1" => ["#71E5D1", "#7759B0", "#FF7331", "#927AC0", "#A3A3A3", "#FF8F5A"],
   "six-groups-cat-2" => ["#71E5D1", "#A3A3A3", "#7759B0", "#FF7331", "#332d2f", "#5AB7A7"],
-  "six-groups-seq" => ["#AAEFE3", "#8DEADA", "#5AB7A7", "#44897D", "#71E5D1", "#12719e"],
+  "six-groups-seq" => ["#AAEFE3", "#8DEADA", "#5AB7A7", "#44897D", "#2D5C54", "#71E5D1"],
   "diverging-colors" => [
     "#FDE133",
     "#FF7331",
