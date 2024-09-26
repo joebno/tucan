@@ -33,13 +33,15 @@ color_schemes = %{
     "#7759B0"
   ],
   "shades-blue" => [
+    "#AAEFE3",
     "#8DEADA",
     "#71E5D1",
     "#5AB7A7"
   ],
   "shades-gray" => [
+    "#A3A3A3",
     "#737373",
-    "#A3A3A3"
+    "#525252"
   ],
   "shades-yellow" => [
     "#FDDA00"
@@ -59,20 +61,20 @@ color_schemes = %{
   "three-groups-cat" => ["#71E5D1", "#FF7331", "#927AC0"],
   "three-groups-seq" => ["#8DEADA", "#71E5D1", "#5AB7A7"],
   "four-groups-cat-1" => ["#927AC0", "#A3A3A3", "#FF7331", "#71E5D1"],
-  "four-groups-cat-2" => ["#71E5D1", "#7759B0", "#FF7331", "#5c5859"],
-  "four-groups-seq" => ["#cfe8f3", "#73bf42", "#71E5D1", "#5AB7A7"],
+  "four-groups-cat-2" => ["#71E5D1", "#7759B0", "#FF7331", "#525252"],
+  "four-groups-seq" => ["#AAEFE3", "#73bf42", "#71E5D1", "#5AB7A7"],
   "five-groups-cat-1" => ["#71E5D1", "#FF7331", "#A3A3A3", "#7759B0", "#927AC0"],
   "five-groups-cat-2" => ["#71E5D1", "#5AB7A7", "#A3A3A3", "#FF7331", "#332d2f"],
-  "five-groups-seq" => ["#cfe8f3", "#73bf42", "#71E5D1", "#5AB7A7", "#927AC0"],
+  "five-groups-seq" => ["#AAEFE3", "#73bf42", "#71E5D1", "#5AB7A7", "#927AC0"],
   "six-groups-cat-1" => ["#71E5D1", "#7759B0", "#FF7331", "#927AC0", "#A3A3A3", "#55b748"],
   "six-groups-cat-2" => ["#71E5D1", "#A3A3A3", "#7759B0", "#FF7331", "#332d2f", "#5AB7A7"],
-  "six-groups-seq" => ["#cfe8f3", "#8DEADA", "#73bfe2", "#46abdb", "#71E5D1", "#12719e"],
+  "six-groups-seq" => ["#AAEFE3", "#8DEADA", "#73bfe2", "#46abdb", "#71E5D1", "#12719e"],
   "diverging-colors" => [
     "#ca5800",
     "#FF7331",
     "#fdd870",
     "#fff2cf",
-    "#cfe8f3",
+    "#AAEFE3",
     "#73bfe2",
     "#71E5D1",
     "#5AB7A7"
