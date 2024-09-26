@@ -98,7 +98,7 @@ theme = [
     title_padding: 10,
     title_font: font,
     title_color: axis_color,
-    subtitle_color: axis_color
+    text_color: axis_color
   ],
   axis_y: [
     domain: false,
@@ -117,7 +117,7 @@ theme = [
     title_y: -10,
     title_x: 18,
     title_color: axis_color,
-    subtitle_color: axis_color
+    text_color: axis_color
   ],
   legend: [
     label_font_size: 12,
@@ -129,7 +129,7 @@ theme = [
     orient: "right",
     offset: 10,
     title_color: axis_color,
-    subtitle_color: axis_color
+    text_color: axis_color
   ],
   view: [
     stroke: "transparent"
