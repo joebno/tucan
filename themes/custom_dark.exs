@@ -16,7 +16,7 @@
 #     500: "#7759B0"
 #   }
 
-mark_color = "#FFF"
+mark_color = "#71E5D1"
 axis_color = "#FFF"
 background_color = "#0E0E0E"
 font = "lato"
@@ -82,6 +82,10 @@ theme = [
     font_size: title_font_size,
     font: font
   ],
+  title: [
+    color: axis_color,
+    subtitle_color: axis_color
+  ],
   axis_x: [
     domain: true,
     domain_color: axis_color,
@@ -94,8 +98,7 @@ theme = [
     tick_size: 5,
     title_font_size: 12,
     title_padding: 10,
-    title_font: font,
-    title_color: axis_color
+    title_font: font
   ],
   axis_y: [
     domain: false,
@@ -112,8 +115,7 @@ theme = [
     title_font: font,
     title_angle: 0,
     title_y: -10,
-    title_x: 18,
-    title_color: axis_color
+    title_x: 18
   ],
   legend: [
     label_font_size: 12,
