@@ -16,7 +16,7 @@
 #     500: "#7759B0"
 #   }
 
-mark_color = "#71E5D1"
+mark_color = "#FDDA00"
 axis_color = "#FFF"
 background_color = "#0E0E0E"
 font = "lato"
