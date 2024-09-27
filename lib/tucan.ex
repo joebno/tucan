@@ -4585,6 +4585,14 @@ defmodule Tucan do
   Check `Tucan.Themes` for more details on theming.
   """
   @doc section: :styling
+  @spec set_theme(vl :: VegaLite.t(), theme :: list()) :: VegaLite.t()
+  def set_theme(vl, theme) when is_list(theme) do
+    theme = Tucan.Themes.Helpers.validate_theme(theme)
+
+    Vl.config(vl, theme)
+  end
+
+  @doc section: :styling
   @spec set_theme(vl :: VegaLite.t(), theme :: atom()) :: VegaLite.t()
   def set_theme(vl, theme) do
     theme = Tucan.Themes.theme(theme)
