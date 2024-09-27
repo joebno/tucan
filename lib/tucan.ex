@@ -4587,7 +4587,7 @@ defmodule Tucan do
   @doc section: :styling
   @spec set_theme(vl :: VegaLite.t(), theme :: list()) :: VegaLite.t()
   def set_theme(vl, theme) when is_list(theme) do
-    theme = Tucan.Themes.Helpers.validate_theme(theme)
+    {:ok, theme} = Tucan.Themes.Helpers.validate_theme(theme)
 
     Vl.config(vl, theme)
   end
