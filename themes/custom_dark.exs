@@ -19,9 +19,9 @@
 mark_color = "#FDDA00"
 axis_color = "#FFF"
 background_color = "#0E0E0E"
-font = "lato"
-label_font = "lato"
-source_font = "lato"
+font = "gotham"
+label_font = "gotham"
+source_font = "gotham"
 grid_color = "#737373"
 title_font_size = 18
 
