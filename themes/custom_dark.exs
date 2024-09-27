@@ -19,9 +19,9 @@
 mark_color = "#FDDA00"
 axis_color = "#FFF"
 background_color = "#0E0E0E"
-font = "gotham"
-label_font = "gotham"
-source_font = "gotham"
+font = "sans-serif"
+label_font = "sans-serif"
+source_font = "sans-serif"
 grid_color = "#737373"
 title_font_size = 18
 
