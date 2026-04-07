@@ -32,6 +32,7 @@ defmodule TucanTest do
         {:lollipop, fn opts -> Tucan.lollipop(@dataset, "x", "y", opts) end},
         {:pie, fn opts -> Tucan.pie(@dataset, "x", "y", opts) end},
         {:punchcard, fn opts -> Tucan.punchcard(@dataset, "x", "y", "z", opts) end},
+        {:range_bar, fn opts -> Tucan.range_bar(@dataset, "c", "min", "max", opts) end},
         {:scatter, fn opts -> Tucan.scatter(@dataset, "x", "y", opts) end},
         {:step, fn opts -> Tucan.step(@dataset, "x", "y", opts) end},
         {:streamgraph, fn opts -> Tucan.streamgraph(@dataset, "x", "y", "z", opts) end},
@@ -50,6 +51,53 @@ defmodule TucanTest do
         assert Map.get(vl.spec, "width") == 135, "width not set for #{inspect(name)}"
         assert Map.get(vl.spec, "height") == 82, "height not set for #{inspect(name)}"
         assert Map.get(vl.spec, "title") == "Plot title", "title not set for #{inspect(name)}"
+      end
+    end
+
+    test "zoomable option is properly set to all tucan plots", context do
+      zoomable_param = %{
+        "bind" => "scales",
+        "name" => "_grid",
+        "select" => "interval"
+      }
+
+      supporting_zoom = [
+        :area,
+        :bubble,
+        :density,
+        :density_heatmap,
+        :histogram,
+        :lineplot,
+        :range_bar,
+        :scatter,
+        :step,
+        :streamgraph,
+        :stripplot
+      ]
+
+      # param properly set for all plots supporting it
+      for {name, plot_function} <- context.plot_functions, name in supporting_zoom do
+        vl = plot_function.(zoomable: true)
+
+        cond do
+          Tucan.Utils.single_view?(vl) ->
+            assert zoomable_param in Map.get(vl.spec, "params", []),
+                   "zoomable not set for #{name}"
+
+          Tucan.Utils.layered_view?(vl) ->
+            [first | _rest] = vl.spec["layer"]
+
+            refute zoomable_param in Map.get(vl.spec, "params", [])
+            assert zoomable_param in Map.get(first, "params", [])
+
+          true ->
+            assert false, "unexpected"
+        end
+      end
+
+      # validation error if set for plots not supporting it
+      for {name, plot_function} <- context.plot_functions, name not in supporting_zoom do
+        assert_raise NimbleOptions.ValidationError, fn -> plot_function.(zooamble: true) end
       end
     end
 
@@ -115,8 +163,8 @@ defmodule TucanTest do
         Vl.new()
         |> Vl.data_from_values(data)
 
-      assert Tucan.new(data) == expected
-      refute Tucan.new(data, only: [:a]) == expected
+      assert_plot(Tucan.new(data), expected)
+      refute_plot(Tucan.new(data, only: [:a]), expected)
 
       data_only_a = Enum.map(data, &Map.take(&1, [:a]))
 
@@ -124,7 +172,7 @@ defmodule TucanTest do
         Vl.new()
         |> Vl.data_from_values(data_only_a)
 
-      assert Tucan.new(data, only: [:a]) == expected
+      assert_plot(Tucan.new(data, only: [:a]), expected)
     end
 
     test "with vega plot" do
@@ -159,14 +207,17 @@ defmodule TucanTest do
         Vl.new(width: 100, height: 100)
         |> Vl.data_from_values(x: [0, 1, 2, 3, 4], y: [1, 2, 3, 4, 5])
 
-      assert Tucan.new([x: x, y: y], width: 100, height: 100) == expected
+      assert_plot(Tucan.new([x: x, y: y], width: 100, height: 100), expected)
 
       x = Nx.reshape(x, {5, 1})
       y = Nx.reshape(y, {1, 5})
 
-      assert Tucan.new([x: x, y: y], width: 100, height: 100) == expected
+      assert_plot(Tucan.new([x: x, y: y], width: 100, height: 100), expected)
+      assert_plot(Tucan.new([x: x, y: 1..5], width: 100, height: 100), expected)
 
-      assert Tucan.new([x: x, y: 1..5], width: 100, height: 100) == expected
+      vl = Tucan.new(x: x, y: y)
+      assert_inferred_type(vl, "x", "quantitative")
+      assert_inferred_type(vl, "y", "quantitative")
     end
 
     test "raises with invalid nx shape" do
@@ -177,20 +228,99 @@ defmodule TucanTest do
                    fn -> Tucan.new(x: x) end
     end
 
-    test "with zoomable option" do
-      vl = Tucan.new(:iris, zoomable: true)
+    test "various types are inferred from data" do
+      data = [
+        %{
+          x: ~D[2020-01-01],
+          y: "2020-01-01T10:00:00Z",
+          z: 12.34,
+          a: :foo,
+          b: "bar",
+          c: 10,
+          d: true
+        }
+      ]
 
-      assert get_in(vl.spec, ["params"]) == [
-               %{"bind" => "scales", "name" => "_grid", "select" => "interval"}
-             ]
+      vl = Tucan.new(data)
+      assert_inferred_type(vl, "x", "temporal")
+      assert_inferred_type(vl, "y", "temporal")
+      assert_inferred_type(vl, "z", "quantitative")
+      assert_inferred_type(vl, "a", "nominal")
+      assert_inferred_type(vl, "b", "nominal")
+      assert_inferred_type(vl, "c", "quantitative")
+      assert_inferred_type(vl, "d", "nominal")
+    end
 
-      # explicitly set to false
-      vl = Tucan.new(:iris, zoomable: false)
-      assert get_in(vl.spec, ["params"]) == nil
+    test "time columns are parsed and format added to data" do
+      data = [
+        %{
+          t: ~T[10:00:00],
+          y: "11:00:00",
+          z: ~D[2020-01-01]
+        }
+      ]
 
-      # no zoomable option sanity check
-      vl = Tucan.new(:iris)
-      assert get_in(vl.spec, ["params"]) == nil
+      vl = Tucan.new(data)
+
+      assert_inferred_type(vl, "t", "time")
+      assert_inferred_type(vl, "y", "time")
+      assert_inferred_type(vl, "z", "temporal")
+
+      assert get_in(vl.spec, ["data", "format"]) == %{
+               "parse" => %{"t" => "date:'%H:%M:%S'", "y" => "date:'%H:%M:%S'"}
+             }
+    end
+
+    test "with empty data" do
+      vl = Tucan.new([])
+      assert get_in(vl.spec, ["__tucan__", "types"]) == %{}
+    end
+  end
+
+  describe "with global options set" do
+    setup do
+      Tucan.configure(default_width: 100, default_height: 100)
+
+      on_exit(fn ->
+        for option <- [:default_width, :default_height] do
+          Application.delete_env(:tucan, option)
+        end
+      end)
+    end
+
+    test "default options should be applied if not explicitly set" do
+      vl = Tucan.new()
+
+      assert vl.spec["width"] == 100
+      assert vl.spec["height"] == 100
+
+      vl = Tucan.scatter(:iris, "petal_width", "petal_length")
+
+      assert vl.spec["width"] == 100
+      assert vl.spec["height"] == 100
+
+      # if you configure again current global config is overridden
+      Tucan.configure(default_width: 200)
+
+      vl = Tucan.scatter(:iris, "petal_width", "petal_length")
+
+      assert vl.spec["width"] == 200
+      assert vl.spec["height"] == 100
+
+      # supports also :container as default value
+      Tucan.configure(default_width: :container, default_height: 100)
+
+      vl = Tucan.scatter(:iris, "petal_width", "petal_length", height: :container)
+
+      assert vl.spec["width"] == "container"
+      assert vl.spec["height"] == "container"
+    end
+
+    test "explicitly set options should take precedence over global defaults" do
+      vl = Tucan.new(:iris, width: 200)
+
+      assert vl.spec["width"] == 200
+      assert vl.spec["height"] == 100
     end
   end
 
@@ -1566,7 +1696,7 @@ defmodule TucanTest do
         |> Vl.encode_field(:theta, "value", type: :quantitative)
         |> Vl.encode_field(:color, "category")
 
-      assert Tucan.pie(@pie_data, "value", "category") == expected
+      assert_plot(Tucan.pie(@pie_data, "value", "category"), expected)
     end
 
     test "with aggregate statistic" do
@@ -1623,7 +1753,7 @@ defmodule TucanTest do
         |> Vl.encode_field(:x, "x", type: :nominal, axis: [label_angle: 0])
         |> Vl.encode_field(:y, "y", type: :quantitative)
 
-      assert Tucan.bar(data, "x", "y") == expected
+      assert_plot(Tucan.bar(data, "x", "y"), expected)
     end
 
     test "with orient flag set" do
@@ -1634,7 +1764,7 @@ defmodule TucanTest do
         |> Vl.encode_field(:y, "x", type: :nominal, axis: [label_angle: 0])
         |> Vl.encode_field(:x, "y", type: :quantitative)
 
-      assert Tucan.bar(@dataset, "x", "y", orient: :horizontal) == expected
+      assert_plot(Tucan.bar(@dataset, "x", "y", orient: :horizontal), expected)
     end
 
     test "with color_by set and custom aggregate" do
@@ -1646,8 +1776,10 @@ defmodule TucanTest do
         |> Vl.encode_field(:y, "y", type: :quantitative, aggregate: :mean)
         |> Vl.encode_field(:color, "group")
 
-      assert Tucan.bar(@dataset, "x", "y", color_by: "group", y: [aggregate: :mean]) ==
-               expected
+      assert_plot(
+        Tucan.bar(@dataset, "x", "y", color_by: "group", y: [aggregate: :mean]),
+        expected
+      )
     end
 
     test "with mode set to grouped" do
@@ -1660,12 +1792,14 @@ defmodule TucanTest do
         |> Vl.encode_field(:color, "group")
         |> Vl.encode_field(:x_offset, "group")
 
-      assert Tucan.bar(@dataset, "x", "y",
-               color_by: "group",
-               mode: :grouped,
-               y: [aggregate: :mean]
-             ) ==
-               expected
+      assert_plot(
+        Tucan.bar(@dataset, "x", "y",
+          color_by: "group",
+          mode: :grouped,
+          y: [aggregate: :mean]
+        ),
+        expected
+      )
     end
 
     test "with mode set to normalize" do
@@ -1677,12 +1811,14 @@ defmodule TucanTest do
         |> Vl.encode_field(:y, "y", type: :quantitative, aggregate: :mean, stack: :normalize)
         |> Vl.encode_field(:color, "group")
 
-      assert Tucan.bar(@dataset, "x", "y",
-               color_by: "group",
-               mode: :normalize,
-               y: [aggregate: :mean]
-             ) ==
-               expected
+      assert_plot(
+        Tucan.bar(@dataset, "x", "y",
+          color_by: "group",
+          mode: :normalize,
+          y: [aggregate: :mean]
+        ),
+        expected
+      )
     end
 
     test "encoding channel options with orient flag" do
@@ -1735,7 +1871,7 @@ defmodule TucanTest do
         |> Vl.encode_field(:x, "min", type: :quantitative)
         |> Vl.encode_field(:x2, "max", type: :quantitative)
 
-      assert Tucan.range_bar(data, "category", "min", "max") == expected
+      assert_plot(Tucan.range_bar(data, "category", "min", "max"), expected)
     end
 
     test "with orient flag set" do
@@ -1753,7 +1889,7 @@ defmodule TucanTest do
         |> Vl.encode_field(:y, "min", type: :quantitative)
         |> Vl.encode_field(:y2, "max", type: :quantitative)
 
-      assert Tucan.range_bar(data, "category", "min", "max", orient: :vertical) == expected
+      assert_plot(Tucan.range_bar(data, "category", "min", "max", orient: :vertical), expected)
     end
 
     test "with color_by set and custom options" do
@@ -1773,10 +1909,13 @@ defmodule TucanTest do
         |> Vl.encode_field(:y_offset, "category")
         |> Vl.encode_field(:color, "category")
 
-      assert Tucan.range_bar(data, "category", "min", "max",
-               color_by: "category",
-               fill_color: "red"
-             ) == expected
+      assert_plot(
+        Tucan.range_bar(data, "category", "min", "max",
+          color_by: "category",
+          fill_color: "red"
+        ),
+        expected
+      )
     end
   end
 
@@ -1902,7 +2041,7 @@ defmodule TucanTest do
         |> Vl.encode_field(:x, "type", type: :nominal, axis: [label_angle: 0])
         |> Vl.encode_field(:y, "type", aggregate: :count, type: :quantitative)
 
-      assert Tucan.countplot(data, "type") == expected
+      assert_plot(Tucan.countplot(data, "type"), expected)
     end
 
     test "with orient flag set" do
@@ -2868,5 +3007,15 @@ defmodule TucanTest do
     {_, plot} = pop_in(plot.spec["__tucan__"])
 
     assert plot == expected
+  end
+
+  defp refute_plot(plot, expected) do
+    {_, plot} = pop_in(plot.spec["__tucan__"])
+
+    refute plot == expected
+  end
+
+  defp assert_inferred_type(plot, field, type) do
+    assert get_in(plot.spec, ["__tucan__", "types", field]) == "#{type}"
   end
 end

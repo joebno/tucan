@@ -13,7 +13,7 @@ defmodule Tucan.Image do
 
     type = Nx.type(tensor)
 
-    unless type in [{:u, 8}, {:f, 32}] do
+    if type not in [{:u, 8}, {:f, 32}] do
       raise ArgumentError,
             "expected Nx.Tensor to have type {:u, 8} or {:f, 32}, got: #{inspect(type)}"
     end
@@ -45,8 +45,10 @@ defmodule Tucan.Image do
         :lower -> {height - 1, 0}
       end
 
+    step = if start_index <= end_index, do: 1, else: -1
+
     y =
-      Nx.tensor(Enum.to_list(start_index..end_index))
+      Nx.tensor(Enum.to_list(start_index..end_index//step))
       |> Nx.broadcast({height, width}, axes: [0])
       |> Nx.to_flat_list()
 
@@ -68,7 +70,7 @@ defmodule Tucan.Image do
   end
 
   defp assert_nx! do
-    unless Code.ensure_loaded?(Nx) do
+    if !Code.ensure_loaded?(Nx) do
       raise RuntimeError, """
       Tucan.imshow/2 depends on the :nx package.
 

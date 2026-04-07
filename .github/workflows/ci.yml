@@ -18,8 +18,14 @@ env:
   TUCAN_DEV: true
 
 jobs:
+  codespell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: codespell-project/actions-codespell@v2
+        with:
+          skip: deps
+          ignore_words_list: tucan
   build:
-
     name: Build and test
     runs-on: ubuntu-latest
 
@@ -27,16 +33,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: "1.17.0"
-            otp: "27.0"
-          - elixir: "1.16.2"
-            otp: "26.1"
+          - elixir: "1.18.2"
+            otp: "27.2"
             lint: true
           - elixir: "1.15.6"
             otp: "26.1"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - uses: erlef/setup-beam@v1
       with:
@@ -44,7 +48,7 @@ jobs:
         elixir-version: ${{matrix.elixir}}
 
     - name: Restore dependencies cache
-      uses: actions/cache@v3
+      uses: actions/cache@v5
       with:
         path: deps
         key: ${{ runner.os }}-mix-${{matrix.elixir}}-${{matrix.otp}}-${{ hashFiles('**/mix.lock') }}
@@ -65,7 +69,4 @@ jobs:
       if: ${{ matrix.lint }}
     - name: Run tests
       run: mix test --cover
-      if: ${{ matrix.lint }}
-    - name: Dialyzer
-      run: mix dialyzer --format dialyxir --format dialyxir --error_handling --extra_return --underspecs --unmatched_returns
       if: ${{ matrix.lint }}

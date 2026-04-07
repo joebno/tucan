@@ -225,4 +225,26 @@ defmodule Tucan.AxesTest do
       assert get_in(vl.spec, ["encoding", "y", "axis", "titleColor"]) == "#FFCCEE"
     end
   end
+
+  test "set_labels_enabled/3 sets the labels enabled of the given axis" do
+    vl =
+      Vl.new()
+      |> Vl.encode_field(:x, "x")
+      |> Vl.encode_field(:y, "y")
+      |> Tucan.Axes.set_labels_enabled(:x, false)
+      |> Tucan.Axes.set_labels_enabled(:y, false)
+
+    assert get_in(vl.spec, ["encoding", "x", "axis", "labels"]) == false
+    assert get_in(vl.spec, ["encoding", "y", "axis", "labels"]) == false
+  end
+
+  test "set_labels_angle/3 sets the label angle of the given axis" do
+    vl =
+      Vl.new()
+      |> Vl.encode_field(:x, "x")
+      |> Vl.encode_field(:y, "y")
+      |> Tucan.Axes.set_labels_angle(:x, 45)
+
+    assert get_in(vl.spec, ["encoding", "x", "axis", "labelAngle"]) == 45
+  end
 end

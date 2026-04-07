@@ -110,6 +110,109 @@ defmodule Tucan do
   |> Tucan.set_theme(:latimes)
   ```
 
+  ## Data types inference
+
+  Tucan will try to infer the types of the data you pass to it. Currently this
+  is mainly used for automatically assigning temporal encodings when your data
+  contains date or date-time values.
+
+  For example the following will mark the `:x` encoding type as `:temporal`:
+
+  ```tucan
+  data = [
+    %{x: ~D[2020-01-01], y: 12.34},
+    %{x: ~D[2020-01-02], y: 13.21},
+    %{x: ~D[2020-01-03], y: 9.81}
+  ]
+
+  # x is marked as temporal instead of quantitative which is the default for line plots
+  Tucan.lineplot(data, "x", "y")
+  ```
+
+  Type inference will also work if your data contains a binary represenation of timestamps:
+
+  ```tucan
+  data = [
+    %{x: "2020-01-01T10:00:00Z", y: 12.34},
+    %{x: "2020-01-02", y: 13.21},
+    %{x: "2020-01-03", y: 9.81}
+  ]
+
+  Tucan.lineplot(data, "x", "y")
+  ```
+
+  > #### Limitations {: .warning}
+  >
+  > Notice that there are some limitations to the type inference:
+  >
+  > - Only if you pass actual data the type inference will be performed, if you
+  > pass a URL to a dataset then no type inference is applied.
+  > - Types are inferred only from the **first row** of the data, if your data
+  > are not consistent this may lead to incorrect type inference.
+  >
+  > If you want to enforce a specific type you need to override the type
+  > in the encoding channel options.
+  >
+  > ```tucan
+  > data = [
+  >   %{x: ~D[2020-01-01], y: 12.34},
+  >   %{x: ~D[2020-01-02], y: 13.21},
+  >   %{x: ~D[2020-01-03], y: 9.81}
+  > ]
+  >
+  > # x is marked as nominal instead of temporal
+  > Tucan.lineplot(data, "x", "y", x: [type: :nominal])
+  > ```
+
+  #### Time columns
+
+  Tucan will also parse time columns if they are passed as strings or `Time` structs
+  and will apply the proper parse format in order to be displayed correctly:
+
+  ```tucan
+  data = [
+    %{x: ~T[10:00:00], y: 12.34},
+    %{x: ~T[11:00:00], y: 13.21},
+    %{x: ~T[12:00:00], y: 9.81}
+  ]
+
+  Tucan.lineplot(data, "x", "y", points: true)
+  ```
+
+  > #### Use time columns carefully {: .warning}
+  >
+  > It is advised to use date-time columns instead of time columns, since the
+  > latter missed the date information. As a result `VegaLite` will assign a
+  > default date (1900-01-01) to all of them and you may have unexpected results
+  > if you have data from two different dates.
+  >
+  > ```tucan
+  > data = [
+  >   %{x: ~T[20:00:00], y: 12.34},
+  >   %{x: ~T[21:00:00], y: 13.21},
+  >   %{x: ~T[23:42:22], y: 9.81},
+  >   # data imply an observiation of the following day
+  >   %{x: ~T[01:10:10], y: 10.01}
+  > ]
+  >
+  > # notice the default tooltip rendered by vega-lite as well as
+  > # the position of the last point on the left side of the plot
+  > Tucan.lineplot(data, "x", "y", points: true, tooltip: true)
+  > ```
+  >
+  > Instead with date time columns you would get:
+  >
+  > ```tucan
+  > data = [
+  >   %{x: ~U[2020-01-01T20:00:00Z], y: 12.34},
+  >   %{x: ~U[2020-01-01T21:00:00Z], y: 13.21},
+  >   %{x: ~U[2020-01-01T23:42:22Z], y: 9.81},
+  >   %{x: ~U[2020-01-02T01:10:10Z], y: 10.01}
+  > ]
+  >
+  > Tucan.lineplot(data, "x", "y", points: true, tooltip: true)
+  > ```
+
   ## Encoding channels options
 
   All Tucan plots are building a `VegaLite` specification based on some sane
@@ -163,7 +266,7 @@ defmodule Tucan do
 
   ## Interactive plots
 
-  Tucan plots support zooming and panning. In order to activate them you can set the
+  Most tucan plots support zooming and panning. In order to activate them you can set the
   `:zoomable` option to `true`. Use your mouse to zoom and pan the following plot. You
   can also reset the view with a double click.
 
@@ -176,6 +279,34 @@ defmodule Tucan do
   ```tucan
   Tucan.histogram(:cars, "Horsepower", tooltip: true, zoomable: true)
   ```
+
+  ## Global configuration
+
+  You can configure some options that will be applied to all plots by using the `Tucan.configure/1`
+  function.
+
+  For example you can set the default width and height of all plots:
+
+  ```elixir
+  Tucan.configure(default_width: 700, default_height: 350)
+  ```
+
+  > #### Options precedence {: .info}
+  >
+  > Global configuration options will be overridden by plot specific options.
+  >
+  > ```elixir
+  > Tucan.configure(default_width: 400, default_height: 300)
+  >
+  > # this will create a plot with the default width and height
+  > Tucan.scatter(:iris, "sepal_width", "sepal_length")
+  >
+  > # this will create a plot with the width to 500 and height having the default
+  > # value of 300
+  > Tucan.scatter(:iris, "sepal_width", "sepal_length", width: 500)
+  > ```
+
+  For more details check `Tucan.configure/1`.
   """
   import Tucan.Utils, only: [encode_field: 4, encode_field: 5, encode: 4]
   alias Tucan.Utils
@@ -209,7 +340,7 @@ defmodule Tucan do
   """
   @doc section: :construction
   @spec new() :: VegaLite.t()
-  def new, do: Vl.new()
+  def new, do: new_tucan_plot([])
 
   @doc """
   Creates if needed a `VegaLite` plot and adds data to it.
@@ -343,9 +474,24 @@ defmodule Tucan do
 
     data = maybe_transform_data(data)
 
+    column_types = Tucan.Data.column_types(data)
+
+    # we need to inject time parser formatting in case of time columns
+    time_columns =
+      column_types
+      |> Enum.filter(fn {_key, type} -> type == :time end)
+      |> Enum.map(fn {key, _} -> {key, "date:'%H:%M:%S'"} end)
+      |> Enum.into(%{})
+
+    data_opts =
+      Tucan.Keyword.put_new_conditionally(data_opts, :format, [parse: time_columns], fn ->
+        time_columns != %{}
+      end)
+
     spec_opts
     |> new_tucan_plot()
     |> Vl.data_from_values(data, data_opts)
+    |> Utils.put_tucan_metadata(:types, column_types)
   end
 
   defp maybe_transform_data(data) do
@@ -365,7 +511,7 @@ defmodule Tucan do
   defp maybe_nx_to_list(column, name) when is_struct(column, Nx.Tensor) do
     shape = Nx.shape(column)
 
-    unless valid_shape?(shape) do
+    if !valid_shape?(shape) do
       raise ArgumentError,
             "invalid shape for #{name} tensor, expected a 1-d tensor, got a #{inspect(shape)} tensor"
     end
@@ -381,12 +527,12 @@ defmodule Tucan do
   defp valid_shape?(_shape), do: false
 
   defp new_tucan_plot(opts) do
-    {custom_opts, spec_opts} = Keyword.split(opts, [:tucan, :zoomable])
+    {custom_opts, spec_opts} = Keyword.split(opts, [:tucan])
 
     spec_opts
     |> Vl.new()
     |> maybe_add_tucan_metadata(custom_opts[:tucan])
-    |> maybe_zoomable(custom_opts[:zoomable])
+    |> maybe_apply_defaults()
   end
 
   defp maybe_add_tucan_metadata(vl, nil), do: vl
@@ -394,15 +540,26 @@ defmodule Tucan do
   defp maybe_add_tucan_metadata(vl, tucan_opts),
     do: Utils.put_in_spec(vl, "__tucan__", tucan_opts)
 
-  defp maybe_zoomable(vl, false), do: vl
-  defp maybe_zoomable(vl, nil), do: vl
-  defp maybe_zoomable(vl, true), do: Vl.param(vl, "_grid", select: "interval", bind: "scales")
+  defp maybe_apply_defaults(vl) do
+    opts = Application.get_all_env(:tucan)
+
+    vl
+    |> maybe_call(opts[:default_width] != nil, fn vl ->
+      Tucan.Utils.put_in_spec_new(vl, "width", opts[:default_width])
+    end)
+    |> maybe_call(opts[:default_height] != nil, fn vl ->
+      Tucan.Utils.put_in_spec_new(vl, "height", opts[:default_height])
+    end)
+  end
+
+  defp maybe_call(vl, false, _fun), do: vl
+  defp maybe_call(vl, true, fun), do: fun.(vl)
 
   ## Plots
 
   # TODO: move it to helper module for reusability
   # global_opts should be applicable in all plot types
-  @global_opts [:width, :height, :title, :only, :zoomable]
+  @global_opts [:width, :height, :title, :only]
   @global_mark_opts [:clip, :fill_opacity, :tooltip]
 
   histogram_opts = [
@@ -470,6 +627,7 @@ defmodule Tucan do
                       :y2,
                       :color,
                       :fill_color,
+                      :zoomable,
                       :corner_radius
                     ],
                     histogram_opts
@@ -569,6 +727,7 @@ defmodule Tucan do
     |> histogram_y_encoding(field, opts)
     |> maybe_encode_field(:color, fn -> opts[:color_by] != nil end, opts[:color_by], opts, [])
     |> maybe_flip_axes(flip_axes?)
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   defp bin_count_transform(vl, field, opts) do
@@ -733,7 +892,8 @@ defmodule Tucan do
                     :orient,
                     :fill_color,
                     :interpolate,
-                    :color
+                    :color,
+                    :zoomable
                   ],
                   density_opts
                 )
@@ -904,6 +1064,7 @@ defmodule Tucan do
     |> encode_field(:y, "density", opts, type: :quantitative, stack: stack)
     |> maybe_encode_field(:color, fn -> opts[:color_by] != nil end, opts[:color_by], opts, [])
     |> maybe_flip_axes(flip_axes?)
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   stripplot_opts = [
@@ -951,7 +1112,8 @@ defmodule Tucan do
                       :color,
                       :point_size,
                       :point_shape,
-                      :point_color
+                      :point_color,
+                      :zoomable
                     ],
                     stripplot_opts
                   )
@@ -1092,6 +1254,7 @@ defmodule Tucan do
     |> maybe_encode_field(:color, fn -> opts[:color_by] != nil end, opts[:color_by], opts, [])
     |> maybe_add_jitter(opts)
     |> maybe_flip_axes(flip_axes?)
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   defp stripplot_mark(vl, :tick, opts), do: Vl.mark(vl, :tick, Keyword.take(opts, [:tooltip]))
@@ -1491,7 +1654,15 @@ defmodule Tucan do
   ]
 
   @boxplot_opts Tucan.Options.take!(
-                  [@global_opts, @global_mark_opts, :orient, :color_by, :x, :y, :color],
+                  [
+                    @global_opts,
+                    @global_mark_opts,
+                    :orient,
+                    :color_by,
+                    :x,
+                    :y,
+                    :color
+                  ],
                   boxplot_opts
                 )
   @boxplot_schema Tucan.Options.to_nimble_schema!(@boxplot_opts)
@@ -1926,7 +2097,7 @@ defmodule Tucan do
     z: [
       type: :string,
       doc: """
-      If set corresponds to the field that will be used for calculating the color fo the
+      If set corresponds to the field that will be used for calculating the color of the
       bin using the provided aggregate. If not set (the default behaviour) the count of
       observations are used for coloring the bin.
       """
@@ -1946,7 +2117,8 @@ defmodule Tucan do
                             @global_mark_opts,
                             :x,
                             :y,
-                            :color
+                            :color,
+                            :zoomable
                           ],
                           density_heatmap_opts
                         )
@@ -2019,6 +2191,7 @@ defmodule Tucan do
     |> encode_field(:x, x, opts, type: :quantitative, bin: true)
     |> encode_field(:y, y, opts, type: :quantitative, bin: true)
     |> color_fn.()
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   bar_opts = [
@@ -2180,7 +2353,8 @@ defmodule Tucan do
                     :y_offset,
                     :color,
                     :fill_color,
-                    :corner_radius
+                    :corner_radius,
+                    :zoomable
                   ])
   @range_bar_schema Tucan.Options.to_nimble_schema!(@range_bar_opts)
 
@@ -2272,6 +2446,7 @@ defmodule Tucan do
     |> maybe_encode_field(:color, fn -> opts[:color_by] != nil end, opts[:color_by], opts, [])
     |> maybe_encode_field(:y_offset, fn -> opts[:color_by] != nil end, opts[:color_by], opts, [])
     |> maybe_flip_axes(flip_axes?)
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   lollipop_opts = [
@@ -2547,7 +2722,8 @@ defmodule Tucan do
                   :size,
                   :point_color,
                   :point_size,
-                  :point_shape
+                  :point_shape,
+                  :zoomable
                 ])
   @scatter_schema Tucan.Options.to_nimble_schema!(@scatter_opts)
 
@@ -2712,6 +2888,7 @@ defmodule Tucan do
     |> maybe_encode_field(:size, fn -> opts[:size_by] != nil end, opts[:size_by], opts,
       type: :quantitative
     )
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   @bubble_opts Tucan.Options.take!([
@@ -2721,7 +2898,8 @@ defmodule Tucan do
                  :x,
                  :y,
                  :size,
-                 :color
+                 :color,
+                 :zoomable
                ])
   @bubble_schema Tucan.Options.to_nimble_schema!(@bubble_opts)
 
@@ -2786,6 +2964,7 @@ defmodule Tucan do
     |> maybe_encode_field(:color, fn -> opts[:color_by] != nil end, opts[:color_by], opts,
       type: :nominal
     )
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   lineplot_opts = [
@@ -2825,7 +3004,8 @@ defmodule Tucan do
                      :color,
                      :stroke_width,
                      :stroke_dash,
-                     :line_color
+                     :line_color,
+                     :zoomable
                    ],
                    lineplot_opts
                  )
@@ -2949,6 +3129,7 @@ defmodule Tucan do
       [detail: []],
       type: :nominal
     )
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   defp maybe_add_point_opts(mark_opts, false, _opts), do: mark_opts
@@ -3034,7 +3215,8 @@ defmodule Tucan do
                  :color,
                  :fill_color,
                  :point_color,
-                 :line_color
+                 :line_color,
+                 :zoomable
                ],
                area_opts
              )
@@ -3154,6 +3336,7 @@ defmodule Tucan do
     |> encode_field(:x, x, opts, type: :quantitative)
     |> encode_field(:y, y, opts, type: :quantitative, stack: stack)
     |> maybe_encode_field(:color, fn -> opts[:color_by] != nil end, opts[:color_by], opts, [])
+    |> Utils.maybe_zoomable(opts[:zoomable])
   end
 
   defp maybe_add_line_opts(mark_opts, false, _opts), do: mark_opts
@@ -3635,7 +3818,7 @@ defmodule Tucan do
         pairplot_child_spec({row_field, row_index}, {col_field, col_index}, length(fields), opts)
       end
 
-    spec_opts = Keyword.take(opts, [:title]) ++ [columns: length(fields)]
+    spec_opts = Keyword.take(opts, [:title, :zoomable]) ++ [columns: length(fields)]
 
     plotdata
     |> new(spec_opts)
@@ -4378,11 +4561,11 @@ defmodule Tucan do
                   """
 
           true ->
-            vl = Vl.new()
+            %VegaLite{} = vl = Vl.new()
 
             layers =
               for layer <- plot.spec["layer"] do
-                %VegaLite{vl | spec: Map.merge(vl.spec, layer)}
+                %{vl | spec: Map.merge(vl.spec, layer)}
               end
 
             acc ++ layers
@@ -4590,6 +4773,78 @@ defmodule Tucan do
     theme = Tucan.Themes.theme(theme)
 
     Vl.config(vl, theme)
+  end
+
+  @config_schema [
+    default_width: [
+      type: {:or, [:pos_integer, {:in, [:container]}]},
+      doc: "The default width of the plot, if the width is already set it will not be overridden"
+    ],
+    default_height: [
+      type: {:or, [:pos_integer, {:in, [:container]}]},
+      doc:
+        "The default height of the plot, if the height is already set it will not be overridden"
+    ]
+  ]
+
+  @doc """
+  Sets default `Tucan` options.
+
+  > #### Usage {: .info}
+  >
+  > These options will be set as default `tucan` options. Notice that if you override these
+  > settings in your plot then the global settings will not be used.
+  >
+  > ```elixir
+  > Tucan.configure(default_width: 400, default_height: 300)
+  >
+  > # this will create a plot with the default width and height
+  > Tucan.scatter(:iris, "sepal_width", "sepal_length")
+  >
+  > # this will create a plot with the width to 500 and height having the default
+  > # value of 300
+  > Tucan.scatter(:iris, "sepal_width", "sepal_length", width: 500)
+  >
+  > # you can also set the width to `:container` to make it responsive
+  > Tucan.configure(default_width: :container)
+  > ```
+
+  ## Options
+
+  #{NimbleOptions.docs(@config_schema)}
+
+  ## Examples
+
+      # Configuring default width and height for tucan plots
+      Tucan.configure(default_width: 700, default_height: 350)
+
+  > #### Width and Height Configuration {: .info}
+  >
+  > The `configure/1` function sets default dimensions for your plots:
+  >
+  > **Single-view plots:**
+  > * Default width and height control the plotting area size
+  > * Individual plots can override these defaults with their own `width` and `height` properties
+  >
+  > **Multi-view plots (concatenated, faceted, or repeated):**
+  > * Default dimensions apply to each inner view
+  > * Final size is calculated based on how views are composed
+  > * To control overall size, adjust dimensions of individual views
+  >
+  > **Responsive Layouts:**
+  > * Use `:container` as width/height to make a dimension match its container
+  > * Example: `Tucan.configure(default_width: :container, default_height: 350)`
+  >
+  > For more details check the [Vega-Lite docs](https://vega.github.io/vega-lite/docs/size.html).
+  """
+  @doc section: :styling
+  @spec configure(opts :: keyword()) :: :ok
+  def configure(opts) do
+    opts = NimbleOptions.validate!(opts, @config_schema)
+
+    current_opts = Application.get_all_env(:tucan)
+
+    Application.put_all_env(tucan: Keyword.merge(current_opts, opts))
   end
 
   ## Private functions
