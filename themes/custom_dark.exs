@@ -153,7 +153,7 @@ theme = [
     diverging: color_schemes["diverging-colors"],
     heatmap: color_schemes["diverging-colors"],
     ordinal: color_schemes["six-groups-seq"],
-    ramp: color_schemes["shades-blue"]
+    ramp: ["#C4B1DE", "#AB8ED0", "#927AC0", "#8269B8", "#7759B0", "#5E3F96"]
   ],
   area: [
     fill: mark_color
